@@ -26,7 +26,7 @@ function App() {
     setLoading(true);
     setError(null);
     setProducts([]);
-    setProgress('リサーチを開始しています...');
+    setProgress('3大モールを調査中...');
 
     try {
       const results = await callGeminiResearch(apiKey, theme, setProgress);
@@ -53,11 +53,14 @@ function App() {
       
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 py-12">
         <header className="text-center mb-16 animate-fade-in">
+          <div className="inline-block px-4 py-1 rounded-full bg-purple-500/10 text-purple-400 text-sm font-bold border border-purple-500/20 mb-6 uppercase tracking-widest">
+            3モール横断リサーチ版
+          </div>
           <h1 className="text-6xl md:text-8xl font-black mb-4 tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
             購物図鑑
           </h1>
           <p className="text-xl md:text-2xl text-gray-400 font-medium max-w-3xl mx-auto leading-relaxed">
-            AIがAmazonから「一生モノ」の逸品をリサーチします。
+            Amazon・楽天・Yahooから「一生モノ」の逸品を一度にリサーチします。
           </p>
         </header>
 
@@ -68,7 +71,7 @@ function App() {
                 type="text"
                 value={theme}
                 onChange={(e) => setTheme(e.target.value)}
-                placeholder="何をリサーチしますか？（例: 一生モノの革財布）"
+                placeholder="例: 長く使える革財布、最高のコーヒーメーカー..."
                 className="flex-grow bg-white/5 border-none rounded-xl px-6 py-4 text-lg focus:ring-2 focus:ring-purple-500 outline-none transition-all placeholder:text-gray-600"
               />
               <button
@@ -76,7 +79,7 @@ function App() {
                 disabled={loading}
                 className="bg-gradient-to-r from-purple-600 to-blue-600 px-8 py-4 rounded-xl font-bold text-lg hover:from-purple-500 hover:to-blue-500 active:scale-95 transition-all shadow-xl"
               >
-                {loading ? '分析中...' : 'リサーチ開始'}
+                {loading ? '分析中...' : '3サイト一気に開始'}
               </button>
             </form>
           </div>
@@ -86,7 +89,7 @@ function App() {
               onClick={() => setShowSettings(!showSettings)}
               className="text-gray-500 hover:text-purple-400 transition-colors"
             >
-              APIキーの設定を開く
+              設定を開く
             </button>
             <div className={`transition-all duration-500 ${loading ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
               <span className="flex items-center gap-2 text-purple-400">
@@ -111,9 +114,6 @@ function App() {
               </button>
               <h2 className="text-2xl font-bold mb-6 text-white tracking-tight">APIキー設定</h2>
               <form onSubmit={saveApiKey}>
-                <p className="text-xs text-gray-400 mb-4">
-                  ※新しく作成したプロジェクトのAPIキーを使用してください。
-                </p>
                 <input
                   type="password"
                   value={apiKey}

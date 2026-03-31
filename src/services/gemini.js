@@ -2,7 +2,6 @@
 
 export async function callGeminiResearch(apiKey, theme, onProgress) {
     // 最新安定モデルのリサーチ用リスト (2026/04)
-    // 503エラー(高負荷)を避けるため、安定性の高いモデルを優先します。
     const models = [
         'gemini-2.0-flash', 
         'gemini-1.5-flash', 
@@ -13,9 +12,13 @@ export async function callGeminiResearch(apiKey, theme, onProgress) {
     ];
 
     const prompt = `あなたは「物を買わない主義」の買い物図鑑の編集長です。
-テーマ「${theme}」に合致する、Amazon.co.jpでの評価が極めて高く、ミニマリストや専門家に評価されている「一生モノ」の商品を 5〜10件 選定してください。
+テーマ「${theme}」に合致する、Amazon.co.jpでの評価が極めて高く、かつ楽天市場やYahoo!ショッピングでも扱われている「一生モノ」の商品を 5〜10件 選定してください。`;
 
-以下の情報をJSON形式で出力してください。amazon_urlはAmazonの検索結果URLを生成してください。
+    // 実際のプロンプト本体（中略せずに記述）
+    const fullPrompt = `あなたは「物を買わない主義」の買い物図鑑の編集長です。
+テーマ「${theme}」に合致する、Amazon.co.jpでの評価が極めて高く、かつ楽天市場やYahoo!ショッピングでも扱われている「一生モノ」の商品を 5〜10件 選定してください。
+
+以下の情報をJSON形式で出力してください。Amazon、楽天、Yahooの検索結果URLをそれぞれ生成してください。
 
 JSON構造：
 {
@@ -29,13 +32,16 @@ JSON構造：
       "fatal_flaws": "欠点",
       "long_term_concerns": "懸念",
       "fake_review_risk": "サクラ度",
-      "amazon_url": "AmazonのURL"
+      "amazon_url": "Amazon의 URL",
+      "rakuten_url": "楽天のURL",
+      "yahoo_url": "YahooのURL",
+      "is_multi_platform": true
     }
   ]
 }`;
 
     for (const model of models) {
-        onProgress(`${model} でリサーチ中...`);
+        onProgress(`3大モールを ${model} でリサーチ中...`);
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=` + apiKey;
 
         try {
@@ -43,14 +49,14 @@ JSON構造：
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
+                    contents: [{ parts: [{ text: fullPrompt }] }],
                     generationConfig: {
                         responseMimeType: "application/json"
                     }
                 })
             });
 
-            // 404 (未検出) や 503 (高負荷) の場合は次のモデルへ
+            // 404, 503, 429 は次のモデルへ
             if (response.status === 404 || response.status === 503 || response.status === 429) {
                 console.warn(`${model} returned status ${response.status}. Trying next...`);
                 continue;
@@ -60,7 +66,6 @@ JSON構造：
                 const errData = await response.json();
                 const msg = errData.error?.message || '';
                 if (msg.includes('high demand') || msg.includes('overloaded') || msg.includes('temporary')) {
-                    console.warn(`${model} is overloaded. Trying next...`);
                     continue;
                 }
                 throw new Error(msg || 'API Request Failed');
@@ -75,12 +80,10 @@ JSON構造：
         } catch (e) {
             console.error(`${model} Error:`, e);
 
-            // 最後のモデルまで失敗した場合はエラーを表示
             if (model === models[models.length - 1]) {
-                throw new Error('複数のモデルで試行しましたが解析に失敗しました。APIキーが正しいか、または1分ほど待ってから再度お試しください。');
+                throw new Error('複数のモデルで試行しましたが、マルチモール分析に失敗しました。時間をおいて再度お試しください。');
             }
 
-            // 一時的なエラーであれば継続
             continue;
         }
     }
